@@ -453,7 +453,7 @@ faust <- function(gatingSet,
 	    threadNum = threadNum,
 	    seedValue = seedValue,
 	    projectPath = projectPath,
-	    clusterLeveInd = clusterLevelInd
+	    clusterLevelInd = clusterLevelInd
 	  )
 	  time_vec <- .add_time('post_clusterLevelsWithScamp')
 	}
