@@ -83,11 +83,13 @@
                                     debugFlag,
                                     threadNum,
                                     seedValue,
-                                    projectPath
+                                    projectPath,
+                                    clusterLevelInd
                                     )
 {
     resList <- readRDS(paste0(projectPath,"/faustData/gateData/",startingCellPop,"_resList.rds"))
     uniqueLevels <- sort(unique(analysisMap[,"analysisLevel"]))
+    if(!is.null(clusterLevelInd)) uniqueLevels <- uniqueLevels[clusterLevelInd]
     activeLevels <- c()
     #accumulate vector of levels without annotation forests.
     for (analysisLevel in uniqueLevels) {
@@ -110,6 +112,17 @@
             projectPath=projectPath
         )
     }
+
+    return()
+}
+
+.getAllScampLabels <- function(startingCellPop,
+                               analysisMap,
+                               nameOccuranceNum,
+                               debugFlag, 
+                               projectPath){
+    resList <- readRDS(paste0(projectPath,"/faustData/gateData/",startingCellPop,"_resList.rds"))
+    uniqueLevels <- sort(unique(analysisMap[,"analysisLevel"]))
     #collect all labels from the scamp clusterings
     if (debugFlag) print("Accumulating cluster labels.")
     clusterNames <- c()
@@ -141,5 +154,4 @@
     cowplot::save_plot(paste0(projectPath,"/faustData/plotData/scampNamesPlot.pdf"),
                        nspOut,base_height=15,base_width=15)
     if (debugFlag) print("Cluster labels collected and saved.")
-    return()
 }

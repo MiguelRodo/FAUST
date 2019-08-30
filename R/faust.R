@@ -86,6 +86,11 @@
 #' @param drawAnnotationHistograms Boolean. Set to 1 to draw the annotation boundary locations for selected markers
 #' for all samples and all markers. Set to 0 to forego the plotting.
 #' 
+#' @param clusterLevelInd integer vector or Boolean. If integer vector, then it specifies the indices of the analysis levels
+#' for which scamp clusters should be made. If \code{FALSE}, then no scamp clusters are made (this is used if
+#' all scamp clusters have already been made). If \code{NULL}, then scamp clusters are made for all levels. Default
+#' is \code{NULL}.
+#' 
 #' @return The FAUST method returns a null value on completion. The main output is the file
 #' "projectPath/faustData/faustCountMatrix.rds". The rownames are `sampleNames(gatingSet)]`
 #' and the column names are the cell populations discovered by the method. Note that the
@@ -128,9 +133,7 @@ faust <- function(gatingSet,
                   drawAnnotationHistograms=1,
                   supervisedList=NA,
                   annotationsApproved=FALSE, 
-                  skipClusterLevelsWithScamp=FALSE, 
-                  skipGateScampClusters=FALSE, 
-                  skipGetFaustCountMatrix=FALSE
+                  clusterLevelInd=NULL
                   )
 {
     time_vec <- proc.time()[3]
@@ -434,7 +437,7 @@ faust <- function(gatingSet,
         #return()
     }
 
-	if(!skipClusterLevelsWithScamp){
+	if(!clusterLevelInd){
 	  if (debugFlag) print("Clustering analysis levels.")
 	  selC <- readRDS(paste0(projectPath,"/faustData/gateData/",startingCellPop,"_selectedChannels.rds"))
 	  .clusterLevelsWithScamp(
@@ -446,40 +449,51 @@ faust <- function(gatingSet,
 	    debugFlag = debugFlag,
 	    threadNum = threadNum,
 	    seedValue = seedValue,
-	    projectPath = projectPath
+	    projectPath = projectPath,
+	    clusterLeveInd = clusterLevelInd
 	  )
 	  time_vec <- .add_time('post_clusterLevelsWithScamp')
 	}
-
-	if(!skipGateScampClusters){
-	  if (debugFlag) print("Gating populations.")
-	  .gateScampClusters(
-	    startingCellPop = startingCellPop,
-	    analysisMap = analysisMap,
-	    selectedChannels = selC,
-	    debugFlag = debugFlag,
-	    projectPath = projectPath
-	  )
-	  time_vec <- .add_time('post_gateScampClusters')
+	# check that all levels have had scamp clusterings performed
+	nAnalysisLevel <- length(unique(analysisMap[,"analysisLevel"]))
+	nLevelsClustered <- list.dirs(paste0(projectPath,"/faustData/levelData"))[-1]
+	
+	if((nAnalysisLevel != nLevelsClustered)){
+	  message(paste0('Only ', nLevelsClustered, ' of ', nAnalysisLevel, ' analysis levels have been clustered thus far.'))
+	  return()
 	}
 	
-	if(!skipGetFaustCountMatrix){
-	  if (debugFlag) print("Generating faust count matrix.")
-	  .getFaustCountMatrix(
-	    analysisMap = analysisMap,
-	    selectedChannels = selC,
-	    debugFlag = debugFlag,
-	    projectPath = projectPath
-	  )
-	  time_vec <- .add_time('post_getFaustCountMatrix')
-	}
+	if(debugFlag) print("Getting all SCAMP labels.")
+	.getAllScampLabels(startingCellPop = startingCellPop,
+                     analysisMap = analysisMap,
+                     nameOccuranceNum = nameOccuranceNum,
+                     debugFlag = debugFlag, 
+                     projectPath = projectPath)
+	time_vec <- .add_time('post_getAllScampLabels')
 
 
+  if (debugFlag) print("Gating populations.")
+  .gateScampClusters(
+    startingCellPop = startingCellPop,
+    analysisMap = analysisMap,
+    selectedChannels = selC,
+    debugFlag = debugFlag,
+    projectPath = projectPath
+  )
+  time_vec <- .add_time('post_gateScampClusters')
+	
+  if (debugFlag) print("Generating faust count matrix.")
+  .getFaustCountMatrix(
+    analysisMap = analysisMap,
+    selectedChannels = selC,
+    debugFlag = debugFlag,
+    projectPath = projectPath
+  )
+  time_vec <- .add_time('post_getFaustCountMatrix')
 
-
-    list(times = round(time_vec/60, 1), 
-	     time_diff = sapply(seq_along(time_vec)[-1], 
-		                    function(i) round((time_vec[i]-time_vec[i-1])/60, 1)))
+  list(times = round(time_vec/60, 1), 
+     time_diff = sapply(seq_along(time_vec)[-1], 
+	                    function(i) round((time_vec[i]-time_vec[i-1])/60, 1)))
 }
 
 if (getRversion() >= "2.15.1")  utils::globalVariables(c(".","Channel","Quantile","QuantileValue","x","y"))
