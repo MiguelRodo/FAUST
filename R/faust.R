@@ -459,7 +459,7 @@ faust <- function(gatingSet,
 	}
 	# check that all levels have had scamp clusterings performed
 	nAnalysisLevel <- length(unique(analysisMap[,"analysisLevel"]))
-	nLevelsClustered <- list.dirs(paste0(projectPath,"/faustData/levelData"))[-1]
+	nLevelsClustered <- length(list.dirs(paste0(projectPath,"/faustData/levelData"))[-1])
 	
 	if((nAnalysisLevel != nLevelsClustered)){
 	  message(paste0('Only ', nLevelsClustered, ' of ', nAnalysisLevel, ' analysis levels have been clustered thus far.'))
