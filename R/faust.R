@@ -127,7 +127,10 @@ faust <- function(gatingSet,
                   nameOccuranceNum=ceiling((0.1*length(gatingSet))),
                   drawAnnotationHistograms=1,
                   supervisedList=NA,
-                  annotationsApproved=FALSE
+                  annotationsApproved=FALSE, 
+                  skipClusterLevelsWithScamp=FALSE, 
+                  skipGateScampClusters=FALSE, 
+                  skipGetFaustCountMatrix=FALSE
                   )
 {
     time_vec <- proc.time()[3]
@@ -269,6 +272,8 @@ faust <- function(gatingSet,
     startingCellPop <- gsub("[[:punct:]]","",startingCellPop)
     startingCellPop <- gsub("[[:space:]]","",startingCellPop)
     startingCellPop <- gsub("[[:cntrl:]]","",startingCellPop)
+    
+    # STRUCTURE: SETUP DONE HERE
     
     #start the annotation process
     if (!file.exists(paste0(projectPath,"/faustData/metaData/bigForestDone.rds"))) {
@@ -429,39 +434,48 @@ faust <- function(gatingSet,
         #return()
     }
 
-    if (debugFlag) print("Clustering analysis levels.")
-    selC <- readRDS(paste0(projectPath,"/faustData/gateData/",startingCellPop,"_selectedChannels.rds"))
-    .clusterLevelsWithScamp(
-        startingCellPop = startingCellPop,
-        selectedChannels = selC,
-        analysisMap = analysisMap,
-        numScampIter = numScampIter,
-        nameOccuranceNum = nameOccuranceNum,
-        debugFlag = debugFlag,
-        threadNum = threadNum,
-        seedValue = seedValue,
-        projectPath = projectPath
-    )
-	time_vec <- .add_time('post_clusterLevelsWithScamp')
-    
-    if (debugFlag) print("Gating populations.")
-    .gateScampClusters(
-        startingCellPop = startingCellPop,
-        analysisMap = analysisMap,
-        selectedChannels = selC,
-        debugFlag = debugFlag,
-        projectPath = projectPath
-    )
-    time_vec <- .add_time('post_gateScampClusters')
+	if(!skipClusterLevelsWithScamp){
+	  if (debugFlag) print("Clustering analysis levels.")
+	  selC <- readRDS(paste0(projectPath,"/faustData/gateData/",startingCellPop,"_selectedChannels.rds"))
+	  .clusterLevelsWithScamp(
+	    startingCellPop = startingCellPop,
+	    selectedChannels = selC,
+	    analysisMap = analysisMap,
+	    numScampIter = numScampIter,
+	    nameOccuranceNum = nameOccuranceNum,
+	    debugFlag = debugFlag,
+	    threadNum = threadNum,
+	    seedValue = seedValue,
+	    projectPath = projectPath
+	  )
+	  time_vec <- .add_time('post_clusterLevelsWithScamp')
+	}
 
-    if (debugFlag) print("Generating faust count matrix.")
-    .getFaustCountMatrix(
-        analysisMap = analysisMap,
-        selectedChannels = selC,
-        debugFlag = debugFlag,
-        projectPath = projectPath
-    )
-    time_vec <- .add_time('post_getFaustCountMatrix')
+	if(!skipGateScampClusters){
+	  if (debugFlag) print("Gating populations.")
+	  .gateScampClusters(
+	    startingCellPop = startingCellPop,
+	    analysisMap = analysisMap,
+	    selectedChannels = selC,
+	    debugFlag = debugFlag,
+	    projectPath = projectPath
+	  )
+	  time_vec <- .add_time('post_gateScampClusters')
+	}
+	
+	if(!skipGetFaustCountMatrix){
+	  if (debugFlag) print("Generating faust count matrix.")
+	  .getFaustCountMatrix(
+	    analysisMap = analysisMap,
+	    selectedChannels = selC,
+	    debugFlag = debugFlag,
+	    projectPath = projectPath
+	  )
+	  time_vec <- .add_time('post_getFaustCountMatrix')
+	}
+
+
+
 
     list(times = round(time_vec/60, 1), 
 	     time_diff = sapply(seq_along(time_vec)[-1], 
