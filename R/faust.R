@@ -86,10 +86,12 @@
 #' @param drawAnnotationHistograms Boolean. Set to 1 to draw the annotation boundary locations for selected markers
 #' for all samples and all markers. Set to 0 to forego the plotting.
 #' 
-#' @param clusterLevelInd integer vector or Boolean. If integer vector, then it specifies the indices of the analysis levels
-#' for which scamp clusters should be made. If \code{FALSE}, then no scamp clusters are made (this is used if
-#' all scamp clusters have already been made). If \code{NULL}, then scamp clusters are made for all levels. Default
+#' @param clusterLevelInd integer vector. If provided, then it specifies the indices of the analysis levels
+#' for which scamp clusters should be made. If \code{NULL}, then scamp clusters are made for all levels. Default
 #' is \code{NULL}.
+#' 
+#' @param skipClustering Boolean. If \code{TRUE}, then SCAMP clusters are not made at the discovery stage. Useful
+#' if clusters have been identified on previous \code{faust} runs. Default is \code{FALSE}.
 #' 
 #' @return The FAUST method returns a null value on completion. The main output is the file
 #' "projectPath/faustData/faustCountMatrix.rds". The rownames are `sampleNames(gatingSet)]`
@@ -133,7 +135,8 @@ faust <- function(gatingSet,
                   drawAnnotationHistograms=1,
                   supervisedList=NA,
                   annotationsApproved=FALSE, 
-                  clusterLevelInd=NULL
+                  clusterLevelInd=NULL, 
+                  skipClustering=FALSE
                   )
 {
     time_vec <- proc.time()[3]
@@ -437,7 +440,7 @@ faust <- function(gatingSet,
         #return()
     }
 
-	if(!clusterLevelInd){
+	if(!skipClustering){
 	  if (debugFlag) print("Clustering analysis levels.")
 	  selC <- readRDS(paste0(projectPath,"/faustData/gateData/",startingCellPop,"_selectedChannels.rds"))
 	  .clusterLevelsWithScamp(
