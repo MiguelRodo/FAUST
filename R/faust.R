@@ -130,6 +130,14 @@ faust <- function(gatingSet,
                   annotationsApproved=FALSE
                   )
 {
+    time_vec <- proc.time()[3]
+    .add_time <- function(x, time = time_vec){
+		init_names_vec <- names(time_vec)
+		time[length(time)+1] <- proc.time()[3]
+		names(time) <- c(init_names_vec, x)
+		time
+	}
+	
     #test parameters. stop if invalid. initialize faustData.
     .validateParameters(
         activeChannels = activeChannels,
@@ -146,7 +154,8 @@ faust <- function(gatingSet,
         supervisedList = supervisedList,
         annotationsApproved = annotationsApproved
     )
-    
+	time_vec <- .add_time('post_parameter_validation')
+	
     #construct the analysis map directly from gating set
     gspData <- pData(gatingSet)
     if ((experimentalUnit == "") || (!(experimentalUnit %in% colnames(gspData)))) {
@@ -190,8 +199,9 @@ faust <- function(gatingSet,
             }
         }
     }
+    time_vec <- .add_time('post_analysis_map_creation')
     
-    #test to see if the channel bounds have changed.
+	#test to see if the channel bounds have changed.
     if (!file.exists(paste0(projectPath,"/faustData/metaData/channelBounds.rds"))) {
         saveRDS(channelBounds,paste0(projectPath,"/faustData/metaData/channelBounds.rds"))
     }
@@ -224,6 +234,7 @@ faust <- function(gatingSet,
             saveRDS(channelBounds,paste0(projectPath,"/faustData/metaData/channelBounds.rds"))
         }
     }
+	time_vec <- .add_time('post_channel_bounds_creation')
 
     #begin method processing. copy data to projectPath from gatingSet.
     if (debugFlag) print("Begin data extraction.")
@@ -234,6 +245,7 @@ faust <- function(gatingSet,
         projectPath = projectPath,
         debugFlag = debugFlag
     )
+	time_vec <- .add_time('post_gs_data_extraction')
 
     if (debugFlag) print("Making restriction matrices.")
     .makeRestrictionMatrices(
@@ -243,6 +255,7 @@ faust <- function(gatingSet,
         projectPath = projectPath,
         debugFlag = debugFlag
     )
+	time_vec <- .add_time('post_restriction_matrices_creation')
 
     #accumulate data into the analysis levels.
     if (debugFlag) print("Begin first analysis level prep.")
@@ -250,6 +263,7 @@ faust <- function(gatingSet,
         analysisMap = analysisMap,
         projectPath = projectPath
     )
+	time_vec <- .add_time('post_init_analysis_levels_creation')
 
     #sanitize the starting cell pop for problem characters.
     startingCellPop <- gsub("[[:punct:]]","",startingCellPop)
@@ -274,6 +288,7 @@ faust <- function(gatingSet,
         bigForestDone <- TRUE
         saveRDS(bigForestDone,paste0(projectPath,"/faustData/metaData/bigForestDone.rds"))
     }
+	time_vec <- .add_time('post_annotation_forest_creation')
     
     if (debugFlag) print("Selecting standard set of channels across experiment using depth score.")
     selC <- .selectChannels(
@@ -284,6 +299,7 @@ faust <- function(gatingSet,
         projectPath = projectPath
     )
     saveRDS(selC,paste0(projectPath,"/faustData/metaData/initSelC.rds"))    
+	time_vec <- .add_time('post_channel_selection')
 
     if (!length(selC)) {
         print("No channels selected at current settings.")
@@ -317,6 +333,7 @@ faust <- function(gatingSet,
             }
         }
     }
+	time_vec <- .add_time('post_preference_list_creation')
 
     if (debugFlag) print("Reconciling annotation boundaries across experiment.")
     .reconcileAnnotationBoundaries(
@@ -327,6 +344,7 @@ faust <- function(gatingSet,
         debugFlag = debugFlag,
         preferenceList = preferenceList
     )
+	time_vec <- .add_time('post_reconcileAnnotationBoundaries')
     
     if ((!is.na(supervisedList)) && (length(selectionList) > 0)){
         if (debugFlag) print("Selection specific reconciled annotation boundaries.")
@@ -341,6 +359,7 @@ faust <- function(gatingSet,
                   to = paste0(projectPath,"/faustData/gateData/",startingCellPop,"_resList.rds"),
                   overwrite = TRUE)
     }
+	time_vec <- .add_time('post_superviseReconciliation;)')
     
     if (debugFlag) print("Writing annotation matrices to file.")
     .mkAnnMats(
@@ -348,6 +367,7 @@ faust <- function(gatingSet,
         analysisMap = analysisMap,
         projectPath = projectPath
     )
+	time_vec <- .add_time('post_mkAnnMats')
     
     if (debugFlag) print("Generating depth score plot.")
     .plotScoreLines(
@@ -355,6 +375,8 @@ faust <- function(gatingSet,
         depthScoreThreshold = depthScoreThreshold,
         selectionQuantile = selectionQuantile
     )
+	time_vec <- .add_time('post_plotScoreLines')
+	
 
     if (debugFlag) print("Generating marker boundary histograms.")
     .plotMarkerHistograms(
@@ -362,6 +384,7 @@ faust <- function(gatingSet,
         startingCellPop = startingCellPop,
         projectPath = projectPath
     )
+	time_vec <- .add_time('post_plotMarkerHistograms')
 
     if (drawAnnotationHistograms) {
         if (debugFlag) print("Generating annotation boundary histograms.")
@@ -374,6 +397,7 @@ faust <- function(gatingSet,
             )
         }
     }
+	time_vec <- .add_time('post_drawAnnotationHistograms')
     
     if (!annotationsApproved) {
         print("********************************************************")
@@ -399,7 +423,10 @@ faust <- function(gatingSet,
         print("Once you are satisfied with the annotation boundary placement, set the parameter")
         print("annotationsApproved=TRUE to cluster and then gate the experiment.")
         print("********************************************************")
-        return()
+		return(list(times = round(time_vec/60, 1), 
+	     time_diff = sapply(seq_along(time_vec)[-1], 
+		                    function(i) round((time_vec[i]-time_vec[i-1])/60, 1))))
+        #return()
     }
 
     if (debugFlag) print("Clustering analysis levels.")
@@ -415,6 +442,7 @@ faust <- function(gatingSet,
         seedValue = seedValue,
         projectPath = projectPath
     )
+	time_vec <- .add_time('post_clusterLevelsWithScamp')
     
     if (debugFlag) print("Gating populations.")
     .gateScampClusters(
@@ -424,6 +452,7 @@ faust <- function(gatingSet,
         debugFlag = debugFlag,
         projectPath = projectPath
     )
+    time_vec <- .add_time('post_gateScampClusters')
 
     if (debugFlag) print("Generating faust count matrix.")
     .getFaustCountMatrix(
@@ -432,8 +461,11 @@ faust <- function(gatingSet,
         debugFlag = debugFlag,
         projectPath = projectPath
     )
+    time_vec <- .add_time('post_getFaustCountMatrix')
 
-    return()
+    list(times = round(time_vec/60, 1), 
+	     time_diff = sapply(seq_along(time_vec)[-1], 
+		                    function(i) round((time_vec[i]-time_vec[i-1])/60, 1)))
 }
 
 if (getRversion() >= "2.15.1")  utils::globalVariables(c(".","Channel","Quantile","QuantileValue","x","y"))
