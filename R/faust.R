@@ -467,9 +467,8 @@ faust <- function(gatingSet,
 	nAnalysisLevel <- length(unique(analysisMap[,"analysisLevel"]))
 	dirLevels <- list.dirs(paste0(projectPath,"/faustData/levelData"))
 	nCompleteLevels <- sum(vapply(dirLevels, function(x){
-	  if(!file.exists(file.path(x, "aLevelComplete.rds"))) return(FALSE)
-	  load(file.path(x, "aLevelComplete.rds"))
-	  aLevelComplete
+	  if(!file.exists(file.path(x, "scampALevelComplete.rds"))) return(FALSE)
+	  readRDS((file.path(x, "scampALevelComplete.rds")))
 	}, logical(1))) 
 	if(nCompleteLevels!=nAnalysisLevel){
 	  message(paste0('Only ', nCompleteLevels, ' of ', nAnalysisLevel, ' analysis levels have been clustered thus far.'))
