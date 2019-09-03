@@ -470,7 +470,7 @@ faust <- function(gatingSet,
 	  if(!file.exists(file.path(x, "aLevelComplete.rds"))) return(FALSE)
 	  load(file.path(x, "aLevelComplete.rds"))
 	  aLevelComplete
-	}, logical())) 
+	}, logical(1))) 
 	if(nCompleteLevels!=nAnalysisLevel){
 	  message(paste0('Only ', nCompleteLevels, ' of ', nAnalysisLevel, ' analysis levels have been clustered thus far.'))
 	  return()
