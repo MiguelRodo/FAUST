@@ -317,7 +317,7 @@ faust <- function(gatingSet,
         stop("Modify faust parameters: incease selectionQuantile, decrease depthScoreThreshold.")
     }
 
-    selectionList <- preferenceList <- list()
+    forceList <- selectionList <- preferenceList <- list()
     if (!is.na(supervisedList)) {
         #supervisedList is a named list of lists
         #name of slot in list: marker
@@ -337,9 +337,13 @@ faust <- function(gatingSet,
                 selectionList <- append(selectionList,list(action))
                 names(selectionList)[length(selectionList)] <- marker
             }
+            else if (actionType == "Force") {
+                forceList <- append(forceList,list(action))
+                names(forceList)[length(forceList)] <- marker
+            }
             else {
                 print(paste0("Requested unsupported supervision type for marker ", marker))
-                print("Only 'Preference' and 'PostSelection' supervision types are currently supported.")
+                print("Only 'Force', 'Preference' and 'PostSelection' supervision types are currently supported.")
                 print(paste0("Ignoring requested action: ",actionType))
             }
         }
@@ -353,7 +357,8 @@ faust <- function(gatingSet,
         analysisMap = analysisMap,
         projectPath = projectPath,
         debugFlag = debugFlag,
-        preferenceList = preferenceList
+        preferenceList = preferenceList,
+        forceList = forceList
     )
 	time_vec <- .add_time('post_reconcileAnnotationBoundaries')
     
@@ -384,7 +389,8 @@ faust <- function(gatingSet,
     .plotScoreLines(
         projectPath = projectPath,
         depthScoreThreshold = depthScoreThreshold,
-        selectionQuantile = selectionQuantile
+        selectionQuantile = selectionQuantile,
+        forceList = forceList
     )
 	time_vec <- .add_time('post_plotScoreLines')
 	
