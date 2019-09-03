@@ -90,9 +90,6 @@
 #' for which scamp clusters should be made. If \code{NULL}, then scamp clusters are made for all levels. Default
 #' is \code{NULL}.
 #' 
-#' @param skipClustering Boolean. If \code{TRUE}, then SCAMP clusters are not made at the discovery stage. Useful
-#' if clusters have been identified on previous \code{faust} runs. Default is \code{FALSE}.
-#' 
 #' @return The FAUST method returns a null value on completion. The main output is the file
 #' "projectPath/faustData/faustCountMatrix.rds". The rownames are `sampleNames(gatingSet)]`
 #' and the column names are the cell populations discovered by the method. Note that the
@@ -135,8 +132,7 @@ faust <- function(gatingSet,
                   drawAnnotationHistograms=1,
                   supervisedList=NA,
                   annotationsApproved=FALSE, 
-                  clusterLevelInd=NULL, 
-                  skipClustering=FALSE
+                  clusterLevelInd=NULL
                   )
 {
     time_vec <- proc.time()[3]
@@ -446,23 +442,22 @@ faust <- function(gatingSet,
         #return()
     }
 
-	if(!skipClustering){
-	  if (debugFlag) print("Clustering analysis levels.")
-	  selC <- readRDS(paste0(projectPath,"/faustData/gateData/",startingCellPop,"_selectedChannels.rds"))
-	  .clusterLevelsWithScamp(
-	    startingCellPop = startingCellPop,
-	    selectedChannels = selC,
-	    analysisMap = analysisMap,
-	    numScampIter = numScampIter,
-	    nameOccuranceNum = nameOccuranceNum,
-	    debugFlag = debugFlag,
-	    threadNum = threadNum,
-	    seedValue = seedValue,
-	    projectPath = projectPath,
-	    clusterLevelInd = clusterLevelInd
-	  )
-	  time_vec <- .add_time('post_clusterLevelsWithScamp')
-	}
+  if (debugFlag) print("Clustering analysis levels.")
+  selC <- readRDS(paste0(projectPath,"/faustData/gateData/",startingCellPop,"_selectedChannels.rds"))
+  .clusterLevelsWithScamp(
+    startingCellPop = startingCellPop,
+    selectedChannels = selC,
+    analysisMap = analysisMap,
+    numScampIter = numScampIter,
+    nameOccuranceNum = nameOccuranceNum,
+    debugFlag = debugFlag,
+    threadNum = threadNum,
+    seedValue = seedValue,
+    projectPath = projectPath,
+    clusterLevelInd = clusterLevelInd
+  )
+  time_vec <- .add_time('post_clusterLevelsWithScamp')
+	  
 	# check that all levels have had scamp clusterings performed
 	nAnalysisLevel <- length(unique(analysisMap[,"analysisLevel"]))
 	dirLevels <- list.dirs(paste0(projectPath,"/faustData/levelData"))
