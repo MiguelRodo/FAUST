@@ -244,10 +244,21 @@ faust <- function(gatingSet,
                           targetArch=c("singleCPU")
                       ),
                   plottingDevice="pdf",
-                  annotationForestDepth=3
+                  annotationForestDepth=3,
+                  dir_save_time 
                   )
 {
+    if (missing(dir_save_time)) stop("dir_save_time must be specified")
+    if (fs::is_absolute_path(dir_save_time)) {
+        dir_save_time <- here::here(dir_save_time)
+    }
+    if (!dir.exists(dir_save_time)) {
+        dir.create(dir_save_time, recurisve = TRUE)
+    }
+
+    time_start_overall <- proc.time()[3] 
     #wrapper around selection and standardization of annotation thresholds.
+    time_start_gen_ann_thresh <- proc.time()[3] 
     generateAnnotationThresholds(
         gatingSet = gatingSet,
         startingCellPop = startingCellPop,
@@ -269,10 +280,17 @@ faust <- function(gatingSet,
         densitySubSampleSize = densitySubSampleSize,
         densitySubSampleIterations = densitySubSampleIterations,
         plottingDevice = plottingDevice,
-        annotationForestDepth = annotationForestDepth
+        annotationForestDepth = annotationForestDepth,
+        dir_save_time = dir_save_time
+        
+    )
+    saveRDS(
+        proc.time()[3] - time_start_gen_ann_thresh,
+        file = file.path(dir_save_time, "faust-sub01-generateAnnotationThresholds.rds")
     )
 
     if (annotationsApproved) {
+        time_start_disc_pheno <- proc.time()[3] 
         #wrapper around discovery and down-selection of phenotypes.
         discoverPhenotypes(
             gatingSet = gatingSet,
@@ -285,9 +303,18 @@ faust <- function(gatingSet,
             densitySubSampleSize = densitySubSampleSize,
             densitySubSampleIterations = densitySubSampleIterations,
             archDescriptionList = archDescriptionList,
-            plottingDevice = plottingDevice
+            plottingDevice = plottingDevice,
+            dir_save_time = dir_save_time
+        )
+        saveRDS(
+            proc.time()[3] - time_start_disc_pheno,
+            file = file.path(dir_save_time, "faust-sub02-discoverPhenotypes.rds")
         )
     }
+    saveRDS(
+        proc.time()[3] - time_start_overall,
+        file = file.path(dir_save_time, "faust-overall.rds")
+    )
     return()
 }
 

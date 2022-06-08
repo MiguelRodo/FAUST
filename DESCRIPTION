@@ -38,7 +38,9 @@ Imports:
     fdrtool,
     Rcpp,
     uwot,
-    bit
+    bit,
+    fs,
+    here
 VignetteBuilder: knitr
 LinkingTo: Rcpp    
 Depends: R (>= 3.6.0)

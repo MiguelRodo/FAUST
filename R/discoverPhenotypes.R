@@ -133,6 +133,7 @@ discoverPhenotypes <- function(gatingSet,
                                plottingDevice="pdf"
                                )
 {
+    time_start_overall <- proc.time()[3] 
     if (!dir.exists(file.path(projectPath,"faustData"))) {
         print("The faustData directory is not detected at the projectPath")
         print("setting. This indicates generateAnnotationThresholds has")
@@ -141,6 +142,7 @@ discoverPhenotypes <- function(gatingSet,
     }
 
     #test parameters for validity. stop faust run if invalid settings detected.
+    time_start_sub <- proc.time()[3]
     .validateDiscoveryParameters(
         projectPath = projectPath,
         debugFlag = debugFlag,
@@ -151,9 +153,14 @@ discoverPhenotypes <- function(gatingSet,
         densitySubSampleIterations=densitySubSampleIterations,
         archDescriptionList=archDescriptionList
     )
+    saveRDS(
+        proc.time()[3] - time_start_sub,
+        file = file.path(dir_save_time, "disc_pheno-sub00-validateDiscoveryParameters.rds")
+    )
 
     if (debugFlag) print("Discovering phenotypes across experimental units.")
     #discover phenotypes in each expeirmental unit
+    time_start_sub <- proc.time()[3]
     .clusterExpUnitsWithScamp(
         projectPath = projectPath,
         nameOccuranceNum = nameOccuranceNum,
@@ -165,41 +172,73 @@ discoverPhenotypes <- function(gatingSet,
         densitySubSampleIterations = densitySubSampleIterations,
         archDescriptionList = archDescriptionList
     )
+    saveRDS(
+        proc.time()[3] - time_start_sub,
+        file = file.path(dir_save_time, "disc_pheno-sub01-clusterExpUnitsWithScamp.rds")
+    )
 
     #plot showing the filtering threshold
+    time_start_sub <- proc.time()[3]
     .plotPhenotypeFilter(
         projectPath=projectPath,
         nameOccuranceNum=nameOccuranceNum,
         plottingDevice=plottingDevice
     )
+    saveRDS(
+        proc.time()[3] - time_start_sub,
+        file = file.path(dir_save_time, "disc_pheno-sub02-plotPhenotypeFilter.rds")
+    )
 
     if (debugFlag) print("Gating populations.")
     #gate out the cells
+    time_start_sub <- proc.time()[3]
     .gateScampClusters(
         projectPath = projectPath,
         debugFlag = debugFlag
     )
+    saveRDS(
+        proc.time()[3] - time_start_sub,
+        file = file.path(dir_save_time, "disc_pheno-sub03-gateScampClusters.rds")
+    )
 
     if (debugFlag) print("Generating faust count matrix.")
     #construct the count matrix
+    time_start_sub <- proc.time()[3]
     .getFaustCountMatrix(
         projectPath = projectPath,
         debugFlag = debugFlag
     )
+    saveRDS(
+        proc.time()[3] - time_start_sub,
+        file = file.path(dir_save_time, "disc_pheno-sub04-getFaustCountMatrix.rds")
+    )
 
     if (debugFlag) print("Gating all populations.")
+    time_start_sub <- proc.time()[3]
     #diagnostic -- gate out every phenotype encountered across experimental units
     .gateAllScampClusters(
         projectPath = projectPath,
         debugFlag = debugFlag
     )
+    saveRDS(
+        proc.time()[3] - time_start_sub,
+        file = file.path(dir_save_time, "disc_pheno-sub05-gateAllScampClusters.rds")
+    )
 
     if (debugFlag) print("Generating exhaustive faust count matrix.")
     #diagnostic -- gate out every phenotype encountered across experimental units
+    time_start_sub <- proc.time()[3]
     .getExhaustiveFaustCountMatrix(
         projectPath = projectPath,
         debugFlag = debugFlag
     )
-
+    saveRDS(
+        proc.time()[3] - time_start_sub,
+        file = file.path(dir_save_time, "disc_pheno-sub06-getExhaustiveFaustCountMatrix.rds")
+    )
+    saveRDS(
+        proc.time()[3] - time_start_overall,
+        file = file.path(dir_save_time, "disc_pheno-overall.rds")
+    )
     return()
 }

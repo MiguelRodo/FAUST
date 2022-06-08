@@ -239,10 +239,13 @@ generateAnnotationThresholds <- function(gatingSet,
                                              ),
                                          annotationsApproved=FALSE,
                                          plottingDevice="pdf",
-                                         annotationForestDepth=3
+                                         annotationForestDepth=3,
+                                         dir_save_time
                                          )
 {
     #first, test parameters for validity. stop faust run if invalid settings detected.
+    time_start_overall <- proc.time()[3] 
+    time_start_val <- proc.time()[3]
     .validateForestParameters(
         activeChannels = activeChannels,
         channelBounds = channelBounds,
@@ -260,9 +263,13 @@ generateAnnotationThresholds <- function(gatingSet,
         densitySubSampleIterations = densitySubSampleIterations,
         archDescriptionList=archDescriptionList
     )
-
+    saveRDS(
+        proc.time()[3] - time_start_val,
+        file = file.path(dir_save_time, "gen_ann-sub01-validateForestParameters.rds")
+    )
 
     #set up the faustData directory for check-pointing/metadata storage.
+    time_start_init <- proc.time()[3]
     .initializeFaustDataDir(
         projectPath = projectPath,
         activeChannels = activeChannels,
@@ -270,10 +277,15 @@ generateAnnotationThresholds <- function(gatingSet,
         startingCellPop = startingCellPop,
         supervisedList=supervisedList
     )
+    saveRDS(
+        proc.time()[3] - time_start_init,
+        file = file.path(dir_save_time, "gen_ann-sub02-initializeFaustDataDir.rds")
+    )
 
     #construct the analysis map using the metadata stored in the gating set.
     #the analysis map is a data frame that links samples to their experimental unit
     #and their level in the imputation hierarchy.
+    time_start_analysis_map <- proc.time()[3]
     .constructAnalysisMap(
         projectPath = projectPath,
         gspData = flowWorkspace::pData(gatingSet),
@@ -282,8 +294,13 @@ generateAnnotationThresholds <- function(gatingSet,
         imputationHierarchy = imputationHierarchy,
         debugFlag = debugFlag
     )
+    saveRDS(
+        proc.time()[3] - time_start_analysis_map,
+        file = file.path(dir_save_time, "gen_ann-sub03-constructAnalysisMap.rds")
+    )
 
     #begin method processing. copy data to projectPath from gatingSet.
+    time_start_extract <- proc.time()[3]
     if (debugFlag) print("Begin data extraction.")
     .extractDataFromGS(
         gs = gatingSet,
@@ -292,16 +309,26 @@ generateAnnotationThresholds <- function(gatingSet,
         projectPath = projectPath,
         debugFlag = debugFlag
     )
+    saveRDS(
+        proc.time()[3] - time_start_extract,
+        file = file.path(dir_save_time, "gen_ann-sub04-extractDataFromGS.rds")
+    )
 
     #make sure the channel bounds conform to internal requirements
     #test to see if there have been changes between faust runs.
+    time_start_cb <- proc.time()[3]
     .processChannelBounds(
         samplesInExp = flowWorkspace::sampleNames(gatingSet),
         projectPath = projectPath,
         channelBounds = channelBounds,
         debugFlag = debugFlag
     )
+    saveRDS(
+        proc.time()[3] - time_start_cb,
+        file = file.path(dir_save_time, "gen_ann-sub05-processChannelBounds.rds")
+    )
 
+    time_start_restrict <- proc.time()[3]
     if (debugFlag) print("Making restriction matrices.")
     #construct arrays that incorporate channel bounds into the analysis for the C++ code
     .makeRestrictionMatrices(
@@ -310,16 +337,26 @@ generateAnnotationThresholds <- function(gatingSet,
         projectPath = projectPath,
         debugFlag = debugFlag
     )
+    saveRDS(
+        proc.time()[3] - time_start_restrict,
+        file = file.path(dir_save_time, "gen_ann-sub06-makeRestrictionMatrices.rds")
+    )
 
     #accumulate data into the experimental units.
+    time_start_sub <- proc.time()[3]
     if (debugFlag) print("Collecting data into experimental units.")
     .prepareExperimentalUnits(projectPath = projectPath)
+    saveRDS(
+        proc.time()[3] - time_start_sub,
+        file = file.path(dir_save_time, "gen_ann-sub07-prepareExperimentalUnits.rds")
+    )
 
 
     #
     #ALL uses of startingCellPop must be updated to sanitizedCellPopStr
     #
     #start the annotation process
+    time_start_sub <- proc.time()[3]
     if (!file.exists(file.path(normalizePath(projectPath),
                                "faustData",
                                "metaData",
@@ -347,36 +384,61 @@ generateAnnotationThresholds <- function(gatingSet,
                           "metaData",
                           "bigForestDone.rds"))
     }
+    saveRDS(
+        proc.time()[3] - time_start_sub,
+        file = file.path(dir_save_time, "gen_ann-sub08-growAnnForest.rds")
+    )
 
+    time_start_sub <- proc.time()[3]
     if (debugFlag) print("Selecting standard set of channels across experiment using depth score.")
     .selectChannels(
         depthScoreThreshold = depthScoreThreshold,
         selectionQuantile = selectionQuantile,
         projectPath = projectPath
     )
+    saveRDS(
+        proc.time()[3] - time_start_sub,
+        file = file.path(dir_save_time, "gen_ann-sub09-selectChannels.rds")
+    )
     #selC no longer returned
     #must map to reads from metaData/initSelC.rds
 
+    time_start_sub <- proc.time()[3]
     if (debugFlag) print("Reconciling annotation boundaries across experiment.")
     .reconcileAnnotationBoundaries(
         projectPath = projectPath,
         debugFlag = debugFlag
     )
+    saveRDS(
+        proc.time()[3] - time_start_sub,
+        file = file.path(dir_save_time, "gen_ann-sub10-reconcileAnnotationBoundaries.rds")
+    )
 
     #apply supervision to the standardization of annotation boundaries,
     #if the user has specified specific choices.
+    time_start_sub <- proc.time()[3]
     .superviseReconciliation(
         projectPath = projectPath,
         debugFlag = debugFlag
     )
+    saveRDS(
+        proc.time()[3] - time_start_sub,
+        file = file.path(dir_save_time, "gen_ann-sub11-superviseReconciliation.rds")
+    )
 
 
+    time_start_sub <- proc.time()[3]
     if (debugFlag) print("Writing annotation matrices to file.")
     #create arrays of single-cell annotations for every cell relative to the thresholds
     .mkAnnMats(
         projectPath = projectPath
     )
+    saveRDS(
+        proc.time()[3] - time_start_sub,
+        file = file.path(dir_save_time, "gen_ann-sub12-mkAnnMats.rds")
+    )
 
+    time_start_sub <- proc.time()[3]
     if (debugFlag) print("Generating depth score plot.")
     #make diagnostic plots for the depth score
     .plotScoreLines(
@@ -385,14 +447,24 @@ generateAnnotationThresholds <- function(gatingSet,
         selectionQuantile = selectionQuantile,
         plottingDevice = plottingDevice
     )
+    saveRDS(
+        proc.time()[3] - time_start_sub,
+        file = file.path(dir_save_time, "gen_ann-sub13-plotScoreLines.rds")
+    )
 
+    time_start_sub <- proc.time()[3]
     if (debugFlag) print("Generating marker boundary histograms.")
     #diagnostic plots: aggregate histograms with the distribution of thresholds
     .plotMarkerHistograms(
         projectPath = projectPath,
         plottingDevice = plottingDevice
     )
+    saveRDS(
+        proc.time()[3] - time_start_sub,
+        file = file.path(dir_save_time, "gen_ann-sub14-plotMarkerHistograms.rds")
+    )
 
+    time_start_sub <- proc.time()[3]
     if (drawAnnotationHistograms) {
         if (debugFlag) print("Generating annotation boundary histograms.")
         #diagnostic plots. show the threshold(s) on data from the underlying samples
@@ -401,6 +473,10 @@ generateAnnotationThresholds <- function(gatingSet,
             plottingDevice=plottingDevice
         )
     }
+    saveRDS(
+        proc.time()[3] - time_start_sub,
+        file = file.path(dir_save_time, "gen_ann-sub15-plotSampleHistograms.rds")
+    )
 
     if (!annotationsApproved) {
         print("********************************************************")
@@ -444,5 +520,9 @@ generateAnnotationThresholds <- function(gatingSet,
                           "metaData",
                           "annotationsApproved.rds"))
     }
+    saveRDS(
+        proc.time()[3] - time_start_overall,
+        file = file.path(dir_save_time, "gen_ann-overall.rds")
+    )
     return()
 }
