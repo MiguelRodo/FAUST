@@ -249,11 +249,11 @@ faust <- function(gatingSet,
                   )
 {
     if (missing(dir_save_time)) stop("dir_save_time must be specified")
-    if (fs::is_absolute_path(dir_save_time)) {
+    if (!fs::is_absolute_path(dir_save_time)) {
         dir_save_time <- here::here(dir_save_time)
     }
     if (!dir.exists(dir_save_time)) {
-        dir.create(dir_save_time, recurisve = TRUE)
+        dir.create(dir_save_time, recursive = TRUE)
     }
 
     time_start_overall <- proc.time()[3] 
