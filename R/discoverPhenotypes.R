@@ -130,7 +130,8 @@ discoverPhenotypes <- function(gatingSet,
                                    list(
                                        targetArch=c("singleCPU")
                                    ),
-                               plottingDevice="pdf"
+                               plottingDevice="pdf",
+                               dir_save_time
                                )
 {
     time_start_overall <- proc.time()[3] 
